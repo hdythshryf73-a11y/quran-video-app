@@ -201,66 +201,44 @@ const SURAH_NAMES = [
 ] as const;
 
 const READERS: Reader[] = [
-  {
-    id: 'shaateri',
-    name: 'أبو بكر الشاطري',
-    server: 'Abu_Bakr_Ash-Shaatree_128kbps',
-    quality: '128 kbps',
-  },
-  {
-    id: 'shuraim',
-    name: 'سعود الشريم',
-    server: 'Saood_ash-Shuraym_128kbps',
-    quality: '128 kbps',
-  },
-  {
-    id: 'basit',
-    name: 'عبد الباسط عبد الصمد',
-    server: 'Abdul_Basit_Murattal_192kbps',
-    quality: '192 kbps',
-  },
-  {
-    id: 'sudais',
-    name: 'عبد الرحمن السديس',
-    server: 'Abdurrahmaan_As-Sudais_192kbps',
-    quality: '192 kbps',
-  },
-  {
-    id: 'qasim',
-    name: 'عبد المحسن القاسم',
-    server: 'Muhsin_Al_Qasim_192kbps',
-    quality: '192 kbps',
-  },
-  {
-    id: 'minshawi',
-    name: 'محمد صديق المنشاوي',
-    server: 'Minshawy_Murattal_128kbps',
-    quality: '128 kbps',
-  },
-  {
-    id: 'muaiqly',
-    name: 'ماهر المعيقلي',
-    server: 'MaherAlMuaiqly128kbps',
-    quality: '128 kbps',
-  },
-  {
-    id: 'afasy',
-    name: 'مشاري العفاسي',
-    server: 'Alafasy_128kbps',
-    quality: '128 kbps',
-  },
-  {
-    id: 'husary',
-    name: 'محمود خليل الحصري',
-    server: 'Husary_128kbps',
-    quality: '128 kbps',
-  },
-  {
-    id: 'dussary',
-    name: 'ياسر الدوسري',
-    server: 'Yasser_Ad-Dussary_128kbps',
-    quality: '128 kbps',
-  },
+  { id: 'shaateri', name: 'أبو بكر الشاطري', server: 'Abu_Bakr_Ash-Shaatree_128kbps', quality: 'Murattal · 128 kbps' },
+  { id: 'shuraim', name: 'سعود الشريم', server: 'Saood_ash-Shuraym_128kbps', quality: 'Murattal · 128 kbps' },
+  { id: 'basit', name: 'عبد الباسط عبد الصمد', server: 'Abdul_Basit_Murattal_192kbps', quality: 'Murattal · 192 kbps' },
+  { id: 'sudais', name: 'عبد الرحمن السديس', server: 'Abdurrahmaan_As-Sudais_192kbps', quality: 'Murattal · 192 kbps' },
+  { id: 'qasim', name: 'عبد المحسن القاسم', server: 'Muhsin_Al_Qasim_192kbps', quality: 'Murattal · 192 kbps' },
+  { id: 'minshawi', name: 'محمد صديق المنشاوي', server: 'Minshawy_Murattal_128kbps', quality: 'Murattal · 128 kbps' },
+  { id: 'husary', name: 'محمود خليل الحصري', server: 'Husary_128kbps', quality: 'Murattal · 128 kbps' },
+  { id: 'afasy', name: 'مشاري العفاسي', server: 'Alafasy_128kbps', quality: 'Murattal · 128 kbps' },
+  { id: 'hani-rifai', name: 'هاني الرفاعي', server: 'Hani_Rifai_192kbps', quality: 'Murattal · 192 kbps' },
+  { id: 'ajamy', name: 'أحمد بن علي العجمي', server: 'ahmed_ibn_ali_al_ajamy_128kbps', quality: '128 kbps' },
+  { id: 'ayyoub', name: 'محمد أيوب', server: 'Muhammad_Ayyoub_128kbps', quality: '128 kbps' },
+  { id: 'jibreel', name: 'محمد جبريل', server: 'Muhammad_Jibreel_128kbps', quality: '128 kbps' },
+  { id: 'hudhaify', name: 'علي الحذيفي', server: 'Hudhaify_128kbps', quality: '128 kbps' },
+  { id: 'ibrahim-akhdar', name: 'إبراهيم الأخضر', server: 'Ibrahim_Akhdar_32kbps', quality: '32 kbps' },
+  { id: 'nasser-alqatami', name: 'ناصر القطامي', server: 'Nasser_Alqatami_128kbps', quality: '128 kbps' },
+  { id: 'fares-abbad', name: 'فارس عباد', server: 'Fares_Abbad_64kbps', quality: '64 kbps' },
+  { id: 'dussary', name: 'ياسر الدوسري', server: 'Yasser_Ad-Dussary_128kbps', quality: '128 kbps' },
+  { id: 'sahl-yassin', name: 'سهل ياسين', server: 'Sahl_Yassin_128kbps', quality: '128 kbps' },
+  { id: 'basfar', name: 'عبد الله بصفر', server: 'Abdullah_Basfar_192kbps', quality: '192 kbps' },
+  { id: 'ayman-sowaid', name: 'أيمن سويد', server: 'Ayman_Sowaid_64kbps', quality: '64 kbps' },
+  { id: 'khalifa-tunaiji', name: 'خليفة الطنيجي', server: 'khalefa_al_tunaiji_64kbps', quality: '64 kbps' },
+  { id: 'bukhatir', name: 'صلاح بوخاطر', server: 'Salaah_AbdulRahman_Bukhatir_128kbps', quality: '128 kbps' },
+  { id: 'matroud', name: 'عبد الله مطرود', server: 'Abdullah_Matroud_128kbps', quality: '128 kbps' },
+  { id: 'alaqlaqi', name: 'أكرم العلاقمي', server: 'Akram_AlAlaqimy_128kbps', quality: '128 kbps' },
+  { id: 'ali-jaber', name: 'علي جابر', server: 'Ali_Jaber_64kbps', quality: '64 kbps' },
+  { id: 'banna', name: 'محمود علي البنا', server: 'mahmoud_ali_al_banna_32kbps', quality: '32 kbps' },
+  { id: 'juhany', name: 'عبد الله عواد الجهني', server: 'Abdullaah_3awwaad_Al-Juhaynee_128kbps', quality: '128 kbps' },
+  { id: 'yaser-salamah', name: 'ياسر سلامة', server: 'Yaser_Salamah_128kbps', quality: '128 kbps' },
+  { id: 'neana', name: 'أحمد نعينع', server: 'Ahmed_Neana_128kbps', quality: '128 kbps' },
+  { id: 'karim-mansoori', name: 'كريم منصوري', server: 'Karim_Mansoori_40kbps', quality: '40 kbps' },
+  { id: 'tablawi', name: 'محمد الطبلاوي', server: 'Mohammad_al_Tablaway_128kbps', quality: '128 kbps' },
+  { id: 'ghamadi', name: 'سعد الغامدي', server: 'Ghamadi_40kbps', quality: '40 kbps' },
+  { id: 'budair', name: 'صالح البدير', server: 'Salah_Al_Budair_128kbps', quality: '128 kbps' },
+  { id: 'muaiqly', name: 'ماهر المعيقلي', server: 'Maher_AlMuaiqly_64kbps', quality: '64 kbps' },
+  { id: 'abdulkareem', name: 'محمد عبد الكريم', server: 'Muhammad_AbdulKareem_128kbps', quality: '128 kbps' },
+  { id: 'aziz-alili', name: 'عزيز عليلي', server: 'Aziz_Alili_128kbps', quality: '128 kbps' },
+  { id: 'nabil-rifai', name: 'نبيل الرفاعي', server: 'Nabil_Rifa3i_48kbps', quality: '48 kbps' },
+  { id: 'parhizgar', name: 'شهريار پرهيزگار', server: 'Parhizgar_48kbps', quality: '48 kbps' },
 ];
 
 const THEMES: Array<{
@@ -491,6 +469,7 @@ export default function QuranVideoStudioPage() {
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [autoPublishEnabled, setAutoPublishEnabled] = useState(true);
   const [surahPickerOpen, setSurahPickerOpen] = useState(false);
   const [surahSearch, setSurahSearch] = useState('');
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -571,10 +550,11 @@ export default function QuranVideoStudioPage() {
 
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || isExportingRef.current) return;
 
-    const shouldContinue = autoContinuePlaybackRef.current && !isExportingRef.current;
+    const shouldContinue = autoContinuePlaybackRef.current;
     audio.pause();
+    if (audio.src !== audioUrl) audio.src = audioUrl;
     setCurrentTime(0);
     setDuration(0);
 
@@ -1094,7 +1074,7 @@ export default function QuranVideoStudioPage() {
     window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
   };
 
-  const handleDownload = async () => {
+  const handleDownloadVideo = async () => {
     if (exporting || publishing) return;
     setExporting(true);
     setNotice({ kind: 'info', message: 'جارٍ تصيير الفيديو وتسجيل صوت كل آية في شريحة مستقلة… لا تغلق الصفحة.' });
@@ -1114,6 +1094,10 @@ export default function QuranVideoStudioPage() {
 
   const handleInstantPublish = async () => {
     if (publishing || exporting) return;
+    if (!autoPublishEnabled) {
+      setNotice({ kind: 'info', message: 'فعّل خيار النشر التلقائي من لوحة التحكم أولاً.' });
+      return;
+    }
     setPublishing(true);
     setNotice({ kind: 'info', message: 'جارٍ تجهيز الفيديو ثم رفعه إلى يوتيوب… قد تستغرق العملية عدة دقائق حسب طول التلاوة.' });
     try {
@@ -1124,9 +1108,9 @@ export default function QuranVideoStudioPage() {
       formData.append('video', videoBlob, `quran2reels-surah-${surahId}.webm`);
       formData.append('metadata', JSON.stringify({
         title: `سورة ${surahName} | ${selectedReader.name} | Quran2Reels`,
-        description: `تلاوة سورة ${surahName} من الآية ${fromAyah} إلى الآية ${toAyah}.\nالقارئ: ${selectedReader.name}\n\nتم إعداد الفيديو باستخدام Quran2Reels / Quran Video Studio.`,
+        description: `تلاوة سورة ${surahName} من الآية ${fromAyah} إلى الآية ${toAyah}.\nالقارئ: ${selectedReader.name}\n\nتم إعداد الفيديو من استوديو التلاوات القرآنية.`,
         privacyStatus: 'unlisted',
-        tags: ['القرآن الكريم', 'تلاوة', 'Quran', 'Quran2Reels'],
+        tags: ['القرآن الكريم', 'تلاوة', 'Quran', 'قرآن كريم'],
         surahId,
         range: { from: fromAyah, to: toAyah },
         aspectRatio,
@@ -1172,6 +1156,7 @@ export default function QuranVideoStudioPage() {
     autoContinuePlaybackRef.current = false;
     setAspectRatio('9:16');
     setReaderId('afasy');
+    setAutoPublishEnabled(true);
     setReaderSearch('');
     setLoadedVerses(INITIAL_FATIHA);
     setIsPlaying(false);
@@ -1229,7 +1214,8 @@ export default function QuranVideoStudioPage() {
     <main dir="rtl" className="min-h-screen bg-[#07090e] text-slate-200 selection:bg-amber-400/30">
       <audio
         ref={audioRef}
-        src={audioUrl}
+        crossOrigin="anonymous"
+        playsInline
         preload="none"
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
@@ -1268,7 +1254,7 @@ export default function QuranVideoStudioPage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={handleDownload}
+              onClick={handleDownloadVideo}
               disabled={exporting || publishing}
               title="تصدير فيديو WebM حقيقي يتضمن التلاوة الصوتية"
               className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3 py-2 text-xs font-medium text-slate-300 transition hover:border-amber-400/30 hover:bg-white/[0.06] hover:text-white disabled:cursor-wait disabled:opacity-60"
@@ -1287,11 +1273,12 @@ export default function QuranVideoStudioPage() {
             <button
               type="button"
               onClick={handleInstantPublish}
-              disabled={publishing || exporting}
+              disabled={publishing || exporting || !autoPublishEnabled}
+              title={autoPublishEnabled ? 'تجهيز الفيديو ورفعه إلى يوتيوب' : 'فعّل النشر التلقائي من لوحة التحكم أولاً'}
               className="inline-flex items-center gap-2 rounded-xl border border-amber-300/20 bg-amber-400 px-3.5 py-2 text-xs font-bold text-[#17120a] transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Send size={14} />
-              <span>{publishing ? 'جارٍ تجهيز الفيديو ورفعه…' : 'نشر فوري (تجربة)'}</span>
+              <span>{publishing ? 'جارٍ تجهيز الفيديو ورفعه…' : '⚡ النشر التلقائي على يوتيوب'}</span>
             </button>
           </div>
         </div>
@@ -1595,13 +1582,10 @@ export default function QuranVideoStudioPage() {
                   </div>
 
                   <div className="absolute inset-x-0 top-0 z-10 px-4 pt-4">
-                    <div className="mb-3 flex items-center justify-between gap-2 text-[8px] font-semibold tracking-[0.18em] text-white/70" dir="ltr">
-                      <span>QURAN2REELS</span>
-                      <span className="flex gap-1">
-                        {Array.from({ length: 5 }, (_, index) => (
-                          <span key={index} className="h-[2px] w-6 rounded-full" style={{ backgroundColor: index === 0 ? selectedTheme.accent : 'rgba(255,255,255,0.32)' }} />
-                        ))}
-                      </span>
+                    <div className="mb-3 flex items-center justify-center gap-1.5" aria-hidden="true">
+                      {Array.from({ length: 5 }, (_, index) => (
+                        <span key={index} className="h-[2px] w-6 rounded-full" style={{ backgroundColor: index === 0 ? selectedTheme.accent : 'rgba(255,255,255,0.32)' }} />
+                      ))}
                     </div>
                     {settings.visibility.title ? (
                       <div className="text-center">
@@ -1963,6 +1947,17 @@ export default function QuranVideoStudioPage() {
                 <SlidersHorizontal size={13} className="shrink-0 text-amber-300/70" />
                 جميع التعديلات تنعكس على المعاينة في المنتصف مباشرة.
               </div>
+            </Panel>
+
+            <Panel title="النشر التلقائي على يوتيوب" subtitle="تحكم في إتاحة زر النشر الموجود أعلى الصفحة.">
+              <CheckRow
+                checked={autoPublishEnabled}
+                label="تفعيل النشر التلقائي على يوتيوب"
+                onChange={setAutoPublishEnabled}
+              />
+              <p className="px-2 pb-1 text-[10px] leading-5 text-slate-500">
+                عند الضغط على زر النشر، ينشئ التطبيق ملف فيديو بالصوت والصورة ثم يرسله إلى /api/publish. يجب إعداد OAuth2 على الخادم، وتكون الخصوصية الافتراضية للفيديو غير مدرج.
+              </p>
             </Panel>
           </aside>
         </div>
