@@ -1,8 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { NextResponse } from 'next/server';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
 
 const MAX_VIDEO_BYTES = 512 * 1024 * 1024;
 const ALLOWED_VIDEO_TYPES = new Set([
