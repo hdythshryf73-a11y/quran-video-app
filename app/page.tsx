@@ -19,7 +19,7 @@ import {
   Play,
   Search,
   Send,
-  Sliders,
+  SlidersHorizontal,
   Sparkles,
   Type,
   Upload,
@@ -1484,7 +1484,7 @@ export default function QuranVideoStudioPage() {
                 ))}
               </div>
               <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/[0.05] bg-black/20 px-3 py-2 text-[10px] text-slate-500">
-                <Sliders size={13} className="shrink-0 text-amber-300/70" />
+                <SlidersHorizontal size={13} className="shrink-0 text-amber-300/70" />
                 جميع التعديلات تنعكس على المعاينة في المنتصف مباشرة.
               </div>
             </Panel>
