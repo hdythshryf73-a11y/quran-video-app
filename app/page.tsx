@@ -44,7 +44,7 @@ type Verse = {
 };
 
 type ThemeKey = 'gold' | 'blue' | 'green' | 'purple' | 'emerald' | 'night';
-type MotionMode = 'none' | 'zoom' | 'pan' | 'orbit';
+type MotionMode = 'hex' | 'particles' | 'zoom' | 'pan';
 type EffectKey =
   | 'particles'
   | 'halos'
@@ -54,43 +54,54 @@ type EffectKey =
   | 'rays'
   | 'glow'
   | 'fog';
-type VisibilityKey = 'title' | 'basmala' | 'verses' | 'reader' | 'ending' | 'watermark';
+
+type VisibilityKey =
+  | 'verses'
+  | 'reader'
+  | 'title'
+  | 'basmala'
+  | 'ending'
+  | 'watermark'
+  | 'verseNumber'
+  | 'progressDots';
+
 type AspectRatio = '9:16' | '16:9';
-type Notice = {
-  kind: 'success' | 'error' | 'info';
-  message: string;
-  url?: string;
-};
 
 type StudioSettings = {
   themeKey: ThemeKey;
-  backgroundOpacity: number;
-  motion: MotionMode;
-  motionSpeed: number;
+  motionPattern: MotionMode;
+  motionIntensity: number;
+  bgDarkness: number;
   effects: Record<EffectKey, boolean>;
   visibility: Record<VisibilityKey, boolean>;
   fontSize: number;
   fontFamily: string;
-  fontWeight: number;
   textColor: string;
   highlightColor: string;
+  fontStyle: string;
+  lineHeight: number;
+  letterSpacing: number;
+  verseSpacing: number;
+  bgImage: string | null;
+  bgColor1: string;
+  bgColor2: string;
+  showGradientBg: boolean;
 };
 
 type ScheduleSettings = {
   channelUrl: string;
-  publishFrequency: 'shorts' | 'long' | 'both';
+  videoType: 'shorts' | 'long' | 'both';
   publishTime: string;
+  autoVersesMode: 'fatiha_sequential' | 'full_surah' | 'custom_range';
+  maxDurationMinutes: number;
+  selectedReaderId: string;
   isAuthorized: boolean;
 };
 
-type QuranApiResponse = {
-  data?: {
-    ayahs?: Array<{
-      numberInSurah?: number;
-      text?: string;
-    }>;
-  };
-  message?: string;
+type Notice = {
+  kind: 'success' | 'error' | 'info';
+  message: string;
+  url?: string;
 };
 
 const SURAH_NAMES = [
@@ -139,43 +150,49 @@ const INITIAL_FATIHA: Verse[] = [
 
 const INITIAL_SETTINGS: StudioSettings = {
   themeKey: 'gold',
-  backgroundOpacity: 38,
-  motion: 'zoom',
-  motionSpeed: 1,
+  motionPattern: 'hex',
+  motionIntensity: 20,
+  bgDarkness: 40,
   effects: {
     particles: true,
     halos: true,
-    breathingFrame: true,
+    breathingFrame: false,
     scanline: false,
     fallingStars: false,
-    rays: true,
+    rays: false,
     glow: true,
     fog: false,
   },
   visibility: {
-    title: true,
-    basmala: true,
     verses: true,
     reader: true,
+    title: true,
+    basmala: true,
     ending: true,
     watermark: true,
+    verseNumber: true,
+    progressDots: false,
   },
-  fontSize: 22,
-  fontFamily: "'Amiri', serif",
-  fontWeight: 600,
+  fontSize: 60,
+  fontFamily: 'Amiri',
   textColor: '#ffffff',
   highlightColor: '#fbbf24',
+  fontStyle: 'عريض',
+  lineHeight: 2.2,
+  letterSpacing: 0,
+  verseSpacing: 8,
+  bgImage: null,
+  bgColor1: '#07090e',
+  bgColor2: '#1e293b',
+  showGradientBg: true,
 };
 
-function Panel({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
+function SectionHeader({ title, icon }: { title: string; icon?: ReactNode }) {
   return (
-    <section className="rounded-2xl border border-white/10 bg-[#0b0e14] p-4 shadow-lg">
-      <div className="mb-3">
-        <h2 className="text-sm font-semibold text-slate-100">{title}</h2>
-        {subtitle && <p className="mt-1 text-[11px] text-slate-500">{subtitle}</p>}
-      </div>
-      {children}
-    </section>
+    <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-3">
+      {icon}
+      <h3 className="text-xs font-bold text-amber-300">{title}</h3>
+    </div>
   );
 }
 
@@ -194,16 +211,20 @@ export default function QuranVideoStudioPage() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
-  // Auto Publish & Scheduling States
+  // Auto Publish & Scheduling Modal State
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [scheduleSettings, setScheduleSettings] = useState<ScheduleSettings>({
     channelUrl: '',
-    publishFrequency: 'both',
+    videoType: 'both',
     publishTime: '18:00',
+    autoVersesMode: 'fatiha_sequential',
+    maxDurationMinutes: 5,
+    selectedReaderId: 'khalid-jaleel',
     isAuthorized: false,
   });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedReader = READERS.find((r) => r.id === readerId) ?? READERS[0];
   const surahName = SURAH_NAMES[surahId - 1] ?? SURAH_NAMES[0];
@@ -233,9 +254,9 @@ export default function QuranVideoStudioPage() {
     try {
       const res = await fetch(`https://api.alquran.cloud/v1/surah/${surahId}/quran-uthmani`);
       if (!res.ok) throw new Error('تعذر جلب الآيات.');
-      const data: QuranApiResponse = await res.json();
+      const data = await res.json();
       const ayahs = data.data?.ayahs || [];
-      const verses: Verse[] = ayahs.map((a, idx) => ({
+      const verses: Verse[] = ayahs.map((a: any, idx: number) => ({
         number: a.numberInSurah ?? idx + 1,
         text: a.text ?? '',
       }));
@@ -248,11 +269,19 @@ export default function QuranVideoStudioPage() {
     }
   };
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setSettings((prev) => ({ ...prev, bgImage: url }));
+    }
+  };
+
   const handleDownloadVideo = async () => {
     const audio = audioRef.current;
     if (!audio) return;
     setExporting(true);
-    setNotice({ kind: 'info', message: 'جاري تسجيل وتوليد الفيديو الحقيقي...' });
+    setNotice({ kind: 'info', message: 'جاري تسجيل وتوليد ملف الفيديو المباشر...' });
 
     try {
       const width = aspectRatio === '9:16' ? 720 : 1280;
@@ -300,14 +329,14 @@ export default function QuranVideoStudioPage() {
           return;
         }
 
-        ctx.fillStyle = '#07090e';
+        ctx.fillStyle = settings.bgColor1;
         ctx.fillRect(0, 0, width, height);
 
         if (settings.visibility.watermark) {
           ctx.save();
           ctx.globalAlpha = 0.15;
           ctx.font = 'bold 90px "Amiri", serif';
-          ctx.fillStyle = '#fbbf24';
+          ctx.fillStyle = settings.highlightColor;
           ctx.textAlign = 'center';
           ctx.fillText('السعد', width / 2, height / 2);
           ctx.restore();
@@ -315,8 +344,8 @@ export default function QuranVideoStudioPage() {
 
         if (currentVerse && settings.visibility.verses) {
           ctx.save();
-          ctx.font = '600 32px "Amiri", serif';
-          ctx.fillStyle = '#ffffff';
+          ctx.font = `600 ${settings.fontSize / 2}px "${settings.fontFamily}", serif`;
+          ctx.fillStyle = settings.textColor;
           ctx.textAlign = 'center';
           ctx.fillText(currentVerse.text, width / 2, height / 2 + 50);
           ctx.restore();
@@ -332,8 +361,18 @@ export default function QuranVideoStudioPage() {
     }
   };
 
-  const handleGoogleAuth = () => {
-    alert('سيتم توجيهك للحصول على إذن تسجيل الدخول عبر Google OAuth2 للنشر الآمن.');
+  const handleGoogleAuthRedirect = () => {
+    if (!scheduleSettings.channelUrl) {
+      alert('يرجى إدخال رابط القناة أولاً.');
+      return;
+    }
+    // Auth redirect simulation for Youtube OAuth2
+    const client_id = 'YOUR_GOOGLE_CLIENT_ID';
+    const redirect_uri = window.location.origin;
+    const scope = 'https://www.googleapis.com/auth/youtube.upload';
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${client_id}&redirect_uri=${redirect_uri}&response_type=token&scope=${scope}`;
+    
+    alert('سيتم فتح نافذة تسجيل الدخول الآمن لحساب Google المالك للقناة لاثبات الملكية.');
     setScheduleSettings((prev) => ({ ...prev, isAuthorized: true }));
   };
 
@@ -344,7 +383,7 @@ export default function QuranVideoStudioPage() {
       {/* Header */}
       <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/10 bg-[#07090e]/90 px-6 py-3.5 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 font-bold">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 font-bold shadow-lg">
             السعد
           </div>
           <div>
@@ -359,7 +398,7 @@ export default function QuranVideoStudioPage() {
             className="flex items-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-300 hover:bg-amber-500/20"
           >
             <Clock className="h-4 w-4" />
-            <span>النشر الآلي والجدولة</span>
+            <span>النشر الآلي والجدولة اليومية</span>
           </button>
 
           <button
@@ -380,11 +419,325 @@ export default function QuranVideoStudioPage() {
         </div>
       )}
 
-      {/* Main Grid */}
+      {/* Main Grid Layout matching uploaded screenshots */}
       <main className="grid grid-cols-1 gap-6 p-6 lg:grid-cols-12">
-        {/* Readers & Verses Selection */}
+        {/* Left Control Column (Design & Typography Settings) */}
+        <div className="space-y-6 lg:col-span-4 max-h-[85vh] overflow-y-auto pr-1">
+          {/* Preset Templates */}
+          <div className="rounded-2xl border border-white/10 bg-[#0b0e14] p-4">
+            <SectionHeader title="قالب جاهز" icon={<Sparkles className="h-4 w-4 text-amber-400" />} />
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { id: 'gold', name: 'ذهبي ملكي', bg: 'bg-amber-900/60 border-amber-500' },
+                { id: 'blue', name: 'أزرق عميق', bg: 'bg-blue-900/60 border-blue-500' },
+                { id: 'green', name: 'أخضر إسلامي', bg: 'bg-emerald-900/60 border-emerald-500' },
+                { id: 'purple', name: 'بنفسجي', bg: 'bg-purple-900/60 border-purple-500' },
+                { id: 'emerald', name: 'زمردي', bg: 'bg-teal-900/60 border-teal-500' },
+                { id: 'night', name: 'سماء الليل', bg: 'bg-slate-900 border-slate-500' },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setSettings({ ...settings, themeKey: t.id as any })}
+                  className={`h-16 rounded-xl border p-2 text-[11px] font-bold transition flex items-end justify-center ${t.bg} ${settings.themeKey === t.id ? 'ring-2 ring-amber-400' : 'opacity-70 hover:opacity-100'}`}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Colors & Ornaments */}
+          <div className="rounded-2xl border border-white/10 bg-[#0b0e14] p-4">
+            <SectionHeader title="الألوان والزخارف" icon={<SlidersHorizontal className="h-4 w-4 text-amber-400" />} />
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="mb-1 block text-slate-400">نمط الحركة</label>
+                <select
+                  value={settings.motionPattern}
+                  onChange={(e) => setSettings({ ...settings, motionPattern: e.target.value as any })}
+                  className="w-full rounded-xl border border-white/10 bg-[#07090e] p-2 text-white focus:outline-none"
+                >
+                  <option value="hex">شبكة سداسية</option>
+                  <option value="particles">ذرات طافية</option>
+                  <option value="zoom">زوم تدريجي</option>
+                  <option value="pan">تحريك أفق</option>
+                </select>
+              </div>
+
+              <div>
+                <div className="flex justify-between text-slate-400 mb-1">
+                  <span>كثافة الحركة</span>
+                  <span>{settings.motionIntensity}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={settings.motionIntensity}
+                  onChange={(e) => setSettings({ ...settings, motionIntensity: Number(e.target.value) })}
+                  className="w-full accent-amber-400"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Background Images Upload */}
+          <div className="rounded-2xl border border-white/10 bg-[#0b0e14] p-4">
+            <SectionHeader title="صور وفيديوهات الخلفية" icon={<Upload className="h-4 w-4 text-amber-400" />} />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-white/20 p-6 cursor-pointer hover:border-amber-400/50"
+            >
+              <Upload className="h-6 w-6 text-amber-400 mb-2" />
+              <span className="text-xs text-slate-300 font-bold">انقر لإضافة صور أو فيديو</span>
+              <span className="text-[10px] text-slate-500">اختر خلفية مخصصة للرسم</span>
+              <input ref={fileInputRef} type="file" accept="image/*,video/*" onChange={handleImageUpload} className="hidden" />
+            </div>
+
+            <div className="mt-3 text-xs">
+              <div className="flex justify-between text-slate-400 mb-1">
+                <span>تعتيم الخلفية</span>
+                <span>{settings.bgDarkness}%</span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={settings.bgDarkness}
+                onChange={(e) => setSettings({ ...settings, bgDarkness: Number(e.target.value) })}
+                className="w-full accent-amber-400"
+              />
+            </div>
+          </div>
+
+          {/* Visual Effects Checkboxes */}
+          <div className="rounded-2xl border border-white/10 bg-[#0b0e14] p-4">
+            <SectionHeader title="تأثيرات بصرية" icon={<Sparkles className="h-4 w-4 text-amber-400" />} />
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {[
+                { key: 'particles', label: 'جزيئات متطايرة' },
+                { key: 'halos', label: 'هالات ضوئية' },
+                { key: 'breathingFrame', label: 'إطار متنفس' },
+                { key: 'scanline', label: 'مسح ضوئي' },
+                { key: 'fallingStars', label: 'نجوم متساقطة' },
+                { key: 'rays', label: 'أشعة نورانية' },
+                { key: 'glow', label: 'تألق النص' },
+                { key: 'fog', label: 'ضباب ناعم' },
+              ].map((eff) => (
+                <label key={eff.key} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.effects[eff.key as EffectKey]}
+                    onChange={(e) =>
+                      setSettings({
+                        ...settings,
+                        effects: { ...settings.effects, [eff.key]: e.target.checked },
+                      })
+                    }
+                    className="rounded accent-amber-400"
+                  />
+                  <span>{eff.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Text Settings */}
+          <div className="rounded-2xl border border-white/10 bg-[#0b0e14] p-4">
+            <SectionHeader title="إعدادات النص والخطوط" icon={<Type className="h-4 w-4 text-amber-400" />} />
+            <div className="space-y-3 text-xs">
+              <div>
+                <div className="flex justify-between text-slate-400 mb-1">
+                  <span>حجم الخط</span>
+                  <span>{settings.fontSize}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={20}
+                  max={100}
+                  value={settings.fontSize}
+                  onChange={(e) => setSettings({ ...settings, fontSize: Number(e.target.value) })}
+                  className="w-full accent-amber-400"
+                />
+              </div>
+
+              <div>
+                <label className="mb-1 block text-slate-400">نوع الخط</label>
+                <select
+                  value={settings.fontFamily}
+                  onChange={(e) => setSettings({ ...settings, fontFamily: e.target.value })}
+                  className="w-full rounded-xl border border-white/10 bg-[#07090e] p-2 text-white focus:outline-none"
+                >
+                  <option value="Amiri">خط أميري (Amiri)</option>
+                  <option value="Noto Naskh Arabic">نسخ (Noto Naskh)</option>
+                  <option value="Scheherazade New">شهرزاد</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-slate-400 mb-1">لون النص</label>
+                  <input
+                    type="color"
+                    value={settings.textColor}
+                    onChange={(e) => setSettings({ ...settings, textColor: e.target.value })}
+                    className="w-full h-8 rounded border-none bg-transparent cursor-pointer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">لون التمييز</label>
+                  <input
+                    type="color"
+                    value={settings.highlightColor}
+                    onChange={(e) => setSettings({ ...settings, highlightColor: e.target.value })}
+                    className="w-full h-8 rounded border-none bg-transparent cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Elements Visibility */}
+              <div className="pt-2 border-t border-white/10">
+                <label className="block text-slate-400 mb-2 font-bold">عناصر العرض</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { key: 'verses', label: 'النص' },
+                    { key: 'verseNumber', label: 'رقم الآية' },
+                    { key: 'reader', label: 'اسم القارئ' },
+                    { key: 'title', label: 'اسم السورة' },
+                    { key: 'basmala', label: 'البسملة' },
+                    { key: 'ending', label: 'صدق الله العظيم' },
+                    { key: 'watermark', label: 'علامة السعد المائية' },
+                  ].map((v) => (
+                    <label key={v.key} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={settings.visibility[v.key as VisibilityKey]}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            visibility: { ...settings.visibility, [v.key]: e.target.checked },
+                          })
+                        }
+                        className="rounded accent-amber-400"
+                      />
+                      <span>{v.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Center Screen Preview */}
+        <div className="space-y-4 lg:col-span-5">
+          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#0b0e14] p-3">
+            <div className="flex items-center gap-2 text-xs">
+              <span>الأبعاد:</span>
+              <button
+                onClick={() => setAspectRatio('9:16')}
+                className={`rounded-lg px-3 py-1 ${aspectRatio === '9:16' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800'}`}
+              >
+                طولي (9:16) Shorts
+              </button>
+              <button
+                onClick={() => setAspectRatio('16:9')}
+                className={`rounded-lg px-3 py-1 ${aspectRatio === '16:9' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800'}`}
+              >
+                عرضي (16:9) YouTube
+              </button>
+            </div>
+
+            <button
+              onClick={() => {
+                const a = audioRef.current;
+                if (!a) return;
+                if (isPlaying) {
+                  a.pause();
+                  setIsPlaying(false);
+                } else {
+                  a.play();
+                  setIsPlaying(true);
+                }
+              }}
+              className="flex items-center gap-1.5 rounded-xl bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-300"
+            >
+              {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+              <span>{isPlaying ? 'إيقاف' : 'استماع'}</span>
+            </button>
+          </div>
+
+          <div
+            className={`relative mx-auto flex flex-col justify-between overflow-hidden rounded-3xl border border-white/10 p-6 shadow-2xl ${aspectRatio === '9:16' ? 'aspect-[9/16] max-w-sm' : 'aspect-video w-full'}`}
+            style={{ backgroundColor: settings.bgColor1 }}
+          >
+            {settings.bgImage && (
+              <img src={settings.bgImage} alt="background" className="absolute inset-0 h-full w-full object-cover opacity-60" />
+            )}
+
+            {settings.visibility.watermark && (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-15 select-none">
+                <span className="text-8xl font-bold text-amber-400">السعد</span>
+              </div>
+            )}
+
+            <div className="text-center z-10">
+              {settings.visibility.title && <h3 className="text-lg font-bold text-amber-300">سورة {surahName}</h3>}
+            </div>
+
+            <div className="text-center z-10 space-y-3">
+              {settings.visibility.basmala && surahId !== 1 && surahId !== 9 && (
+                <p className="text-xs text-amber-200/70">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+              )}
+              {currentVerse && settings.visibility.verses && (
+                <div>
+                  <p
+                    className="font-medium leading-relaxed drop-shadow-md"
+                    style={{ fontSize: `${settings.fontSize / 2.2}px`, color: settings.textColor, fontFamily: settings.fontFamily }}
+                  >
+                    {currentVerse.text}
+                  </p>
+                  {settings.visibility.verseNumber && (
+                    <span className="mt-2 inline-block rounded-full bg-amber-400/20 px-3 py-0.5 text-xs font-bold text-amber-300">
+                      آية {currentVerse.number}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="text-center z-10 space-y-1">
+              {settings.visibility.reader && <p className="text-xs font-medium text-slate-300">{selectedReader.name}</p>}
+              {settings.visibility.ending && <p className="text-[10px] text-amber-400">صَدَقَ اللَّهُ الْعَظِيمُ</p>}
+            </div>
+          </div>
+
+          {/* Verse Prev/Next Navigation */}
+          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#0b0e14] p-3 text-xs">
+            <button
+              onClick={() => setCurrentVerseIndex((p) => Math.max(0, p - 1))}
+              disabled={currentVerseIndex === 0}
+              className="rounded-xl bg-slate-800 px-3 py-1.5 text-white disabled:opacity-40"
+            >
+              الآية السابقة
+            </button>
+            <span className="text-slate-400">
+              آية {currentVerseIndex + 1} من {visibleVerses.length}
+            </span>
+            <button
+              onClick={() => setCurrentVerseIndex((p) => Math.min(visibleVerses.length - 1, p + 1))}
+              disabled={currentVerseIndex >= visibleVerses.length - 1}
+              className="rounded-xl bg-slate-800 px-3 py-1.5 text-white disabled:opacity-40"
+            >
+              الآية التالية
+            </button>
+          </div>
+        </div>
+
+        {/* Right Readers Column */}
         <div className="space-y-6 lg:col-span-3">
-          <Panel title="اختيار القارئ" subtitle="يتصدرهم القارئ خالد عبد الجليل">
+          <div className="rounded-2xl border border-white/10 bg-[#0b0e14] p-4">
+            <SectionHeader title="اختيار القارئ" icon={<Music className="h-4 w-4 text-amber-400" />} />
             <div className="relative mb-3">
               <Search className="absolute right-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
               <input
@@ -395,7 +748,7 @@ export default function QuranVideoStudioPage() {
                 className="w-full rounded-xl border border-white/10 bg-[#07090e] py-2 pr-9 pl-3 text-xs text-white focus:outline-none"
               />
             </div>
-            <div className="max-h-52 space-y-1 overflow-y-auto">
+            <div className="max-h-60 space-y-1 overflow-y-auto">
               {filteredReaders.map((r) => (
                 <button
                   key={r.id}
@@ -407,97 +760,55 @@ export default function QuranVideoStudioPage() {
                 </button>
               ))}
             </div>
-          </Panel>
+          </div>
 
-          <Panel title="تحديد السورة والآيات">
-            <div className="space-y-3">
-              <select
-                value={surahId}
-                onChange={(e) => setSurahId(Number(e.target.value))}
-                className="w-full rounded-xl border border-white/10 bg-[#07090e] p-2 text-xs text-white focus:outline-none"
-              >
-                {SURAH_NAMES.map((name, idx) => (
-                  <option key={idx} value={idx + 1}>{idx + 1}. سورة {name}</option>
-                ))}
-              </select>
+          <div className="rounded-2xl border border-white/10 bg-[#0b0e14] p-4 text-xs space-y-3">
+            <SectionHeader title="تحديد السورة والآيات" />
+            <select
+              value={surahId}
+              onChange={(e) => setSurahId(Number(e.target.value))}
+              className="w-full rounded-xl border border-white/10 bg-[#07090e] p-2 text-white focus:outline-none"
+            >
+              {SURAH_NAMES.map((name, idx) => (
+                <option key={idx} value={idx + 1}>
+                  {idx + 1}. سورة {name}
+                </option>
+              ))}
+            </select>
 
-              <button
-                onClick={handleLoadVerses}
-                disabled={loadingVerses}
-                className="w-full rounded-xl bg-slate-800 py-2 text-xs font-semibold text-amber-300 hover:bg-slate-700"
-              >
-                {loadingVerses ? 'جاري جلب النص...' : 'تحديث النص القرآني'}
-              </button>
-            </div>
-          </Panel>
-        </div>
-
-        {/* Studio Preview Canvas */}
-        <div className="space-y-4 lg:col-span-6">
-          <div className="flex items-center justify-between rounded-2xl border border-white/10 bg-[#0b0e14] p-3">
-            <div className="flex items-center gap-2 text-xs">
-              <span>الأبعاد:</span>
-              <button onClick={() => setAspectRatio('9:16')} className={`rounded-lg px-3 py-1 ${aspectRatio === '9:16' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800'}`}>طولي (9:16)</button>
-              <button onClick={() => setAspectRatio('16:9')} className={`rounded-lg px-3 py-1 ${aspectRatio === '16:9' ? 'bg-amber-400 text-slate-950 font-bold' : 'bg-slate-800'}`}>عرضي (16:9)</button>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-slate-400 mb-1">من آية</label>
+                <input
+                  type="number"
+                  value={fromAyah}
+                  onChange={(e) => setFromAyah(Number(e.target.value))}
+                  className="w-full rounded-xl border border-white/10 bg-[#07090e] p-2 text-white focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-slate-400 mb-1">إلى آية</label>
+                <input
+                  type="number"
+                  value={toAyah}
+                  onChange={(e) => setToAyah(Number(e.target.value))}
+                  className="w-full rounded-xl border border-white/10 bg-[#07090e] p-2 text-white focus:outline-none"
+                />
+              </div>
             </div>
 
             <button
-              onClick={() => {
-                const a = audioRef.current;
-                if (!a) return;
-                if (isPlaying) { a.pause(); setIsPlaying(false); }
-                else { a.play(); setIsPlaying(true); }
-              }}
-              className="flex items-center gap-1.5 rounded-xl bg-amber-500/20 px-3 py-1.5 text-xs font-bold text-amber-300"
+              onClick={handleLoadVerses}
+              disabled={loadingVerses}
+              className="w-full rounded-xl bg-amber-400 py-2.5 font-bold text-slate-950 hover:bg-amber-300"
             >
-              {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-              <span>{isPlaying ? 'إيقاف' : 'استماع'}</span>
+              {loadingVerses ? 'جاري التحميل...' : 'تحميل الآيات'}
             </button>
           </div>
-
-          <div className={`relative mx-auto flex flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-slate-950 p-6 shadow-2xl ${aspectRatio === '9:16' ? 'aspect-[9/16] max-w-sm' : 'aspect-video w-full'}`}>
-            {settings.visibility.watermark && (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-10 select-none">
-                <span className="text-8xl font-bold text-amber-400">السعد</span>
-              </div>
-            )}
-
-            <div className="text-center z-10">
-              <h3 className="text-lg font-bold text-amber-300">سورة {surahName}</h3>
-            </div>
-
-            <div className="text-center z-10 space-y-3">
-              {currentVerse && (
-                <div>
-                  <p className="text-xl font-medium leading-relaxed text-white">{currentVerse.text}</p>
-                  <span className="mt-2 inline-block rounded-full bg-amber-400/20 px-3 py-0.5 text-xs font-bold text-amber-300">آية {currentVerse.number}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="text-center z-10">
-              <p className="text-xs font-medium text-slate-300">{selectedReader.name}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Visibility Toggles */}
-        <div className="space-y-6 lg:col-span-3">
-          <Panel title="العلامة المائية والعناصر">
-            <label className="flex items-center gap-2 text-xs cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.visibility.watermark}
-                onChange={(e) => setSettings({ ...settings, visibility: { ...settings.visibility, watermark: e.target.checked } })}
-                className="rounded accent-amber-400"
-              />
-              <span>إظهار علامة "السعد" المائية</span>
-            </label>
-          </Panel>
         </div>
       </main>
 
-      {/* Auto Publish & Schedule Modal Page */}
+      {/* Auto Publish Modal */}
       {isScheduleOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
           <div className="w-full max-w-lg rounded-3xl border border-white/10 bg-[#0b0e14] p-6 shadow-2xl dir-rtl">
@@ -515,19 +826,19 @@ export default function QuranVideoStudioPage() {
               <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3 text-slate-300">
                 <div className="flex items-center gap-2 text-amber-400 font-bold mb-1">
                   <Lock className="h-4 w-4" />
-                  <span>ربط القناة الآمن (Google OAuth2)</span>
+                  <span>اثبات ملكية القناة (Google OAuth2 Security)</span>
                 </div>
-                <p>قم بالتحقق من الملكية لضمان النشر الآمن على قناتك في يوتيوب.</p>
+                <p>لحماية قناتك، يتوجب عليك تسجيل الدخول بحساب Google المالك للقناة لاثبات الملكية ومنح صلاحية النشر.</p>
                 <button
-                  onClick={handleGoogleAuth}
+                  onClick={handleGoogleAuthRedirect}
                   className="mt-2.5 rounded-xl bg-amber-400 px-3 py-1.5 font-bold text-slate-950 hover:bg-amber-300"
                 >
-                  {scheduleSettings.isAuthorized ? '✓ القناة مربوطة ومفعلة' : 'تسجيل الدخول وربط القناة عبر Google'}
+                  {scheduleSettings.isAuthorized ? '✓ القناة موثقة ومربوطة' : 'تسجيل الدخول والربط عبر Google'}
                 </button>
               </div>
 
               <div>
-                <label className="mb-1 block text-slate-400">رابط القناة</label>
+                <label className="mb-1 block text-slate-400">رابط قناة يوتيوب</label>
                 <input
                   type="text"
                   placeholder="https://youtube.com/@yourchannel"
@@ -541,8 +852,8 @@ export default function QuranVideoStudioPage() {
                 <div>
                   <label className="mb-1 block text-slate-400">نوع الفيديوهات اليومية</label>
                   <select
-                    value={scheduleSettings.publishFrequency}
-                    onChange={(e) => setScheduleSettings({ ...scheduleSettings, publishFrequency: e.target.value as any })}
+                    value={scheduleSettings.videoType}
+                    onChange={(e) => setScheduleSettings({ ...scheduleSettings, videoType: e.target.value as any })}
                     className="w-full rounded-xl border border-white/10 bg-[#07090e] p-2.5 text-white focus:outline-none"
                   >
                     <option value="shorts">فيديو قصير (Shorts)</option>
@@ -562,15 +873,28 @@ export default function QuranVideoStudioPage() {
                 </div>
               </div>
 
+              <div>
+                <label className="mb-1 block text-slate-400">نمط اختيار الآيات أوتوماتيكياً (سكربت Python)</label>
+                <select
+                  value={scheduleSettings.autoVersesMode}
+                  onChange={(e) => setScheduleSettings({ ...scheduleSettings, autoVersesMode: e.target.value as any })}
+                  className="w-full rounded-xl border border-white/10 bg-[#07090e] p-2.5 text-white focus:outline-none"
+                >
+                  <option value="fatiha_sequential">البدء من سورة الفاتحة والأخذ بالتسلسل يومياً</option>
+                  <option value="full_surah">سورة كاملة يومياً</option>
+                  <option value="custom_range">نطاق آيات مخصص لكل فيديو</option>
+                </select>
+              </div>
+
               <div className="pt-2 border-t border-white/10 flex justify-end">
                 <button
                   onClick={() => {
-                    setNotice({ kind: 'success', message: 'تم حفظ جدول النشر الآلي اليومي بنجاح!' });
+                    setNotice({ kind: 'success', message: 'تم حفظ إعدادات وتنشيط النشر التلقائي اليومي بنجاح!' });
                     setIsScheduleOpen(false);
                   }}
                   className="rounded-xl bg-amber-400 px-6 py-2 font-bold text-slate-950 hover:bg-amber-300"
                 >
-                  حفظ تفعيل الجدولة
+                  تفعيل النشر اليومي
                 </button>
               </div>
             </div>
